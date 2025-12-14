@@ -38,24 +38,22 @@ int main() {
         return 1;
     }
 
-    while (1) {
-        // All ON
-        for (i = 0; i < NUM_PINS; i++) values[i] = 1;
-        gpiod_line_request_set_values(request, values);
-        sleep(1);
+    // All ON
+    for (i = 0; i < NUM_PINS; i++) values[i] = 1;
+    gpiod_line_request_set_values(request, values);
+    sleep(1);
 
-        // All OFF
-        for (i = 0; i < NUM_PINS; i++) values[i] = 0;
-        gpiod_line_request_set_values(request, values);
-        sleep(1);
+    // All OFF
+    for (i = 0; i < NUM_PINS; i++) values[i] = 0;
+    gpiod_line_request_set_values(request, values);
+    sleep(1);
 
-        // Chase
-        for (i = 0; i < NUM_PINS; i++) {
-            for (int j = 0; j < NUM_PINS; j++) values[j] = 0;
-            values[i] = 1;
-            gpiod_line_request_set_values(request, values);
-            usleep(300000);
-        }
+    // Chase
+    for (i = 0; i < NUM_PINS; i++) {
+        for (int j = 0; j < NUM_PINS; j++) values[j] = 0;
+        values[i] = 1;
+        gpiod_line_request_set_values(request, values);
+        usleep(300000);
     }
 
     gpiod_line_request_release(request);
