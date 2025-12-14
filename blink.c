@@ -9,55 +9,56 @@ int gpio_pins[NUM_PINS] = {17, 27, 22};
 
 int main() {
     struct gpiod_chip *chip;
-    struct gpiod_line *lines[NUM_PINS];
+    struct gpiod_line_settings *settings;
+    struct gpiod_line_config *line_cfg;
+    struct gpiod_request_config *req_cfg;
+    struct gpiod_line_request *request;
+    int values[NUM_PINS];
     int i;
 
     chip = gpiod_chip_open(GPIO_CHIP);
     if (!chip) {
-        perror("Open chip failed");
+        perror("gpiod_chip_open");
         return 1;
     }
 
-    // Request each GPIO line as output
-    for (i = 0; i < NUM_PINS; i++) {
-        lines[i] = gpiod_chip_get_line(chip, gpio_pins[i]);
-        if (!lines[i]) {
-            perror("Get line failed");
-            return 1;
-        }
+    settings = gpiod_line_settings_new();
+    gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_OUTPUT);
 
-        if (gpiod_line_request_output(lines[i], "multi-gpio", 0) < 0) {
-            perror("Request line as output failed");
-            return 1;
-        }
+    line_cfg = gpiod_line_config_new();
+    gpiod_line_config_add_line_settings(
+        line_cfg, gpio_pins, NUM_PINS, settings);
+
+    req_cfg = gpiod_request_config_new();
+    gpiod_request_config_set_consumer(req_cfg, "multi-gpio");
+
+    request = gpiod_chip_request_lines(chip, req_cfg, line_cfg);
+    if (!request) {
+        perror("gpiod_chip_request_lines");
+        return 1;
     }
 
-    // Blink pattern
     while (1) {
-        // Turn all ON
-        for (i = 0; i < NUM_PINS; i++)
-            gpiod_line_set_value(lines[i], 1);
-
+        // All ON
+        for (i = 0; i < NUM_PINS; i++) values[i] = 1;
+        gpiod_line_request_set_values(request, values);
         sleep(1);
 
-        // Turn all OFF
-        for (i = 0; i < NUM_PINS; i++)
-            gpiod_line_set_value(lines[i], 0);
-
+        // All OFF
+        for (i = 0; i < NUM_PINS; i++) values[i] = 0;
+        gpiod_line_request_set_values(request, values);
         sleep(1);
 
-        // Chase pattern
+        // Chase
         for (i = 0; i < NUM_PINS; i++) {
-            gpiod_line_set_value(lines[i], 1);
+            for (int j = 0; j < NUM_PINS; j++) values[j] = 0;
+            values[i] = 1;
+            gpiod_line_request_set_values(request, values);
             usleep(300000);
-            gpiod_line_set_value(lines[i], 0);
         }
     }
 
-    // Cleanup (never reached here, but good practice)
-    for (i = 0; i < NUM_PINS; i++)
-        gpiod_line_release(lines[i]);
-
+    gpiod_line_request_release(request);
     gpiod_chip_close(chip);
     return 0;
 }
