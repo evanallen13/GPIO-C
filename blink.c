@@ -45,6 +45,7 @@ int main() {
 
     // All OFF
     for (i = 0; i < NUM_PINS; i++) values[i] = 0;
+    printf("Turning on: %d\n", values[i]);
     gpiod_line_request_set_values(request, values);
     sleep(1);
 
